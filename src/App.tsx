@@ -404,21 +404,9 @@ interface AddVideoViewProps {
   token: string;
 }
 
-
-
 // 新增影片介面（不使用 form 標籤）
 function AddVideoView({ apiUrl, token }: AddVideoViewProps) {
-  const [formData, setFormData] = useState<{
-    影片標題: string;
-    YouTube連結: string;
-    主題分類: string;
-    '時長(分鐘)': string;
-    適用年級: string;
-    內容摘要: string;
-    教學重點: string;
-    討論問題: string;
-    審核狀態: string;
-  }>({
+  const [formData, setFormData] = useState({
     影片標題: '',
     YouTube連結: '',
     主題分類: '',
@@ -448,14 +436,14 @@ function AddVideoView({ apiUrl, token }: AddVideoViewProps) {
     }
     
     try {
-    const response = await fetch(`${apiUrl}?action=addVideo`, {
-      method: 'POST',
-      body: JSON.stringify({ 
-        ...formData, 
-        '時長(分鐘)': Number(formData['時長(分鐘)']),  // 轉換成數字
-        token 
-      })
-    });
+      const response = await fetch(`${apiUrl}?action=addVideo`, {
+        method: 'POST',
+        body: JSON.stringify({ 
+          ...formData, 
+          '時長(分鐘)': Number(formData['時長(分鐘)']),
+          token 
+        })
+      });
       
       const result = await response.json();
       if (result.statusCode === 200) {
@@ -507,7 +495,7 @@ function AddVideoView({ apiUrl, token }: AddVideoViewProps) {
         <div>
           <label className="block text-gray-700 mb-2">時長(分鐘) *</label>
           <input
-            type="text"
+            type="number"
             placeholder="請輸入數字"
             value={formData['時長(分鐘)']}
             onChange={(e) => setFormData({ ...formData, '時長(分鐘)': e.target.value })}
@@ -544,7 +532,7 @@ function AddVideoView({ apiUrl, token }: AddVideoViewProps) {
           value={formData['內容摘要']}
           onChange={(e) => setFormData({ ...formData, '內容摘要': e.target.value })}
           className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          rows="3"
+          rows={3}
         />
       </div>
       
@@ -554,7 +542,7 @@ function AddVideoView({ apiUrl, token }: AddVideoViewProps) {
           value={formData['教學重點']}
           onChange={(e) => setFormData({ ...formData, '教學重點': e.target.value })}
           className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          rows="2"
+          rows={2}
         />
       </div>
       
