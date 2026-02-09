@@ -503,7 +503,7 @@ function AddVideoView({ apiUrl, token }: AddVideoViewProps) {
         <div>
           <label className="block text-gray-700 mb-2">時長(分鐘) *</label>
           <input
-  type="number"
+  type="text"
   min="1"
   max="120"
   value={formData['時長(分鐘)']}
