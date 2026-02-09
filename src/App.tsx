@@ -485,11 +485,11 @@ function AddVideoView({ apiUrl, token }) {
         <div>
           <label className="block text-gray-700 mb-2">時長(分鐘) *</label>
           <input
-            type="number"
-            min="1"
-            max="120"
-            value={formData['時長(分鐘)']}
-            onChange={(e) => setFormData({ ...formData, '時長(分鐘)': e.target.value })}
+  type="number"
+  min="1"
+  max="120"
+  value={formData['時長(分鐘)']}
+  onChange={(e) => setFormData({ ...formData, '時長(分鐘)': Number(e.target.value) || e.target.value })}
             className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
