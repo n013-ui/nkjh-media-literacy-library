@@ -400,18 +400,29 @@ function AdminView({ apiUrl, token, user }) {
 }
 
 // 新增影片介面（不使用 form 標籤）
-function AddVideoView({ apiUrl, token }) {
-  const [formData, setFormData] = useState({
-    '影片標題': '',
-    'YouTube連結': '',
-    '主題分類': '',
+function AddVideoView({ apiUrl, token }: AddVideoViewProps) {
+  const [formData, setFormData] = useState<{
+    影片標題: string;
+    YouTube連結: string;
+    主題分類: string;
+    '時長(分鐘)': string | number;
+    適用年級: string;
+    內容摘要: string;
+    教學重點: string;
+    討論問題: string;
+    審核狀態: string;
+  }>({
+    影片標題: '',
+    YouTube連結: '',
+    主題分類: '',
     '時長(分鐘)': '',
-    '適用年級': '',
-    '內容摘要': '',
-    '教學重點': '',
-    '討論問題': '',
-    '審核狀態': '待審'
+    適用年級: '',
+    內容摘要: '',
+    教學重點: '',
+    討論問題: '',
+    審核狀態: '待審'
   });
+  
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   
