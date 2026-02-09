@@ -412,7 +412,7 @@ function AddVideoView({ apiUrl, token }: AddVideoViewProps) {
     影片標題: string;
     YouTube連結: string;
     主題分類: string;
-    '時長(分鐘)': string | number;
+    '時長(分鐘)': string;
     適用年級: string;
     內容摘要: string;
     教學重點: string;
@@ -448,10 +448,14 @@ function AddVideoView({ apiUrl, token }: AddVideoViewProps) {
     }
     
     try {
-      const response = await fetch(`${apiUrl}?action=addVideo`, {
-        method: 'POST',
-        body: JSON.stringify({ ...formData, token })
-      });
+    const response = await fetch(`${apiUrl}?action=addVideo`, {
+      method: 'POST',
+      body: JSON.stringify({ 
+        ...formData, 
+        '時長(分鐘)': Number(formData['時長(分鐘)']),  // 轉換成數字
+        token 
+      })
+    });
       
       const result = await response.json();
       if (result.statusCode === 200) {
@@ -506,7 +510,7 @@ function AddVideoView({ apiUrl, token }: AddVideoViewProps) {
             type="text"
             placeholder="請輸入數字"
             value={formData['時長(分鐘)']}
-            onChange={(e) => setFormData({ ...formData, '時長(分鐘)': e.target.value } as any)}
+            onChange={(e) => setFormData({ ...formData, '時長(分鐘)': e.target.value })}
             className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
