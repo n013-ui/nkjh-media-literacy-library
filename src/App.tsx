@@ -1,40 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Search, LogIn, LogOut, Plus, Eye, Star } from 'lucide-react';
+import { Search, Filter, LogIn, LogOut, Plus, Edit, Trash2, Eye, Star } from 'lucide-react';
 
+// ============================================
+// 設定 API 網址（部署後要改成你的網址）
+// ============================================
 const API_URL = 'https://script.google.com/macros/s/AKfycbxjBTHeBoUXUvJVExM-xcU3v3zVdsAN6k6RUDsw-s6QI1HPMSMX6tN5hdm6pczUZTo/exec';
 
-interface User {
-  name: string;
-  email: string;
-  role: string;
-}
-
-interface Video {
-  編號: number;
-  影片標題: string;
-  'YouTube連結': string;
-  'Drive備份連結': string;
-  主題分類: string;
-  次要標籤: string;
-  '時長(分鐘)': number;
-  適用年級: string;
-  內容摘要: string;
-  教學重點: string;
-  討論問題: string;
-  推薦老師: string;
-  上傳日期: string;
-  審核狀態: string;
-  使用次數: number;
-  評分: number;
-  備註: string;
-}
-
+// ============================================
+// 主應用程式
+// ============================================
 export default function MediaLibraryApp() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [currentView, setCurrentView] = useState('public');
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
+  const [currentView, setCurrentView] = useState('public'); // public, admin, login
   
+  // 檢查是否已登入（從 localStorage 讀取）
   useEffect(() => {
     const savedToken = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
@@ -45,7 +26,7 @@ export default function MediaLibraryApp() {
     }
   }, []);
   
-  const handleLogin = (userData: User, userToken: string) => {
+  const handleLogin = (userData, userToken) => {
     setUser(userData);
     setToken(userToken);
     setIsLoggedIn(true);
@@ -65,6 +46,7 @@ export default function MediaLibraryApp() {
   
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* 導覽列 */}
       <nav className="bg-blue-600 text-white shadow-lg">
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
@@ -107,6 +89,7 @@ export default function MediaLibraryApp() {
         </div>
       </nav>
       
+      {/* 主要內容 */}
       <div className="container mx-auto px-4 py-8">
         {currentView === 'login' && !isLoggedIn && (
           <LoginPage onLogin={handleLogin} apiUrl={API_URL} />
@@ -114,7 +97,7 @@ export default function MediaLibraryApp() {
         {currentView === 'public' && (
           <PublicView apiUrl={API_URL} />
         )}
-        {currentView === 'admin' && isLoggedIn && user && token && (
+        {currentView === 'admin' && isLoggedIn && (
           <AdminView apiUrl={API_URL} token={token} user={user} />
         )}
       </div>
@@ -122,18 +105,16 @@ export default function MediaLibraryApp() {
   );
 }
 
-interface LoginPageProps {
-  onLogin: (userData: User, userToken: string) => void;
-  apiUrl: string;
-}
-
-function LoginPage({ onLogin, apiUrl }: LoginPageProps) {
+// ============================================
+// 登入頁面
+// ============================================
+function LoginPage({ onLogin, apiUrl }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
@@ -161,7 +142,7 @@ function LoginPage({ onLogin, apiUrl }: LoginPageProps) {
   return (
     <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-8">
       <h2 className="text-2xl font-bold mb-6 text-center">核心成員登入</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-4">
         <div>
           <label className="block text-gray-700 mb-2">Email</label>
           <input
@@ -169,7 +150,6 @@ function LoginPage({ onLogin, apiUrl }: LoginPageProps) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
           />
         </div>
         <div>
@@ -179,7 +159,6 @@ function LoginPage({ onLogin, apiUrl }: LoginPageProps) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
           />
         </div>
         {error && (
@@ -188,24 +167,23 @@ function LoginPage({ onLogin, apiUrl }: LoginPageProps) {
           </div>
         )}
         <button
-          type="submit"
+          onClick={handleSubmit}
           disabled={loading}
           className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
         >
           {loading ? '登入中...' : '登入'}
         </button>
-      </form>
+      </div>
     </div>
   );
 }
 
-interface PublicViewProps {
-  apiUrl: string;
-}
-
-function PublicView({ apiUrl }: PublicViewProps) {
-  const [videos, setVideos] = useState<Video[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
+// ============================================
+// 公開瀏覽頁面
+// ============================================
+function PublicView({ apiUrl }) {
+  const [videos, setVideos] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [loading, setLoading] = useState(true);
@@ -227,7 +205,7 @@ function PublicView({ apiUrl }: PublicViewProps) {
     }
   };
   
-  const loadVideos = async (category: string = '') => {
+  const loadVideos = async (category = '') => {
     setLoading(true);
     try {
       let url = `${apiUrl}?action=getVideos`;
@@ -245,7 +223,7 @@ function PublicView({ apiUrl }: PublicViewProps) {
     }
   };
   
-  const handleCategoryChange = (category: string) => {
+  const handleCategoryChange = (category) => {
     setSelectedCategory(category);
     loadVideos(category);
   };
@@ -274,6 +252,7 @@ function PublicView({ apiUrl }: PublicViewProps) {
   
   return (
     <div>
+      {/* 搜尋和篩選 */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <div className="flex gap-4 mb-4">
           <div className="flex-1">
@@ -320,6 +299,7 @@ function PublicView({ apiUrl }: PublicViewProps) {
         </div>
       </div>
       
+      {/* 影片列表 */}
       {loading ? (
         <div className="text-center py-12">載入中...</div>
       ) : (
@@ -339,11 +319,8 @@ function PublicView({ apiUrl }: PublicViewProps) {
   );
 }
 
-interface VideoCardProps {
-  video: Video;
-}
-
-function VideoCard({ video }: VideoCardProps) {
+// 影片卡片
+function VideoCard({ video }) {
   return (
     <div className="bg-white rounded-lg shadow hover:shadow-lg transition p-4">
       <div className="flex items-start justify-between mb-2">
@@ -361,7 +338,7 @@ function VideoCard({ video }: VideoCardProps) {
       <p className="text-gray-700 text-sm mb-3">{video['內容摘要']}</p>
       <div className="flex justify-between items-center">
         <span className="text-xs text-gray-500">{video['適用年級']}</span>
-        
+        <a
           href={video['YouTube連結']}
           target="_blank"
           rel="noopener noreferrer"
@@ -374,13 +351,10 @@ function VideoCard({ video }: VideoCardProps) {
   );
 }
 
-interface AdminViewProps {
-  apiUrl: string;
-  token: string;
-  user: User;
-}
-
-function AdminView({ apiUrl, token, user }: AdminViewProps) {
+// ============================================
+// 管理後台
+// ============================================
+function AdminView({ apiUrl, token, user }) {
   const [activeTab, setActiveTab] = useState('pending');
   
   return (
@@ -417,30 +391,26 @@ function AdminView({ apiUrl, token, user }: AdminViewProps) {
         
         <div className="p-6">
           {activeTab === 'add' && <AddVideoView apiUrl={apiUrl} token={token} />}
-          {activeTab === 'pending' && <VideoManagement apiUrl={apiUrl} status="待審" />}
-          {activeTab === 'all' && <VideoManagement apiUrl={apiUrl} status="all" />}
+          {activeTab === 'pending' && <VideoManagement apiUrl={apiUrl} token={token} status="待審" />}
+          {activeTab === 'all' && <VideoManagement apiUrl={apiUrl} token={token} status="all" />}
         </div>
       </div>
     </div>
   );
 }
 
-interface AddVideoViewProps {
-  apiUrl: string;
-  token: string;
-}
-
-function AddVideoView({ apiUrl, token }: AddVideoViewProps) {
+// 新增影片介面（不使用 form 標籤）
+function AddVideoView({ apiUrl, token }) {
   const [formData, setFormData] = useState({
-    影片標題: '',
-    YouTube連結: '',
-    主題分類: '',
+    '影片標題': '',
+    'YouTube連結': '',
+    '主題分類': '',
     '時長(分鐘)': '',
-    適用年級: '',
-    內容摘要: '',
-    教學重點: '',
-    討論問題: '',
-    審核狀態: '待審'
+    '適用年級': '',
+    '內容摘要': '',
+    '教學重點': '',
+    '討論問題': '',
+    '審核狀態': '待審'
   });
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -449,9 +419,10 @@ function AddVideoView({ apiUrl, token }: AddVideoViewProps) {
     setLoading(true);
     setMessage('');
     
+    // 驗證必填欄位
     const required = ['影片標題', 'YouTube連結', '主題分類', '時長(分鐘)', '適用年級', '內容摘要'];
     for (let field of required) {
-      if (!formData[field as keyof typeof formData]) {
+      if (!formData[field]) {
         setMessage(`${field} 為必填欄位`);
         setLoading(false);
         return;
@@ -468,15 +439,15 @@ function AddVideoView({ apiUrl, token }: AddVideoViewProps) {
       if (result.statusCode === 200) {
         setMessage('影片新增成功！');
         setFormData({
-          影片標題: '',
-          YouTube連結: '',
-          主題分類: '',
+          '影片標題': '',
+          'YouTube連結': '',
+          '主題分類': '',
           '時長(分鐘)': '',
-          適用年級: '',
-          內容摘要: '',
-          教學重點: '',
-          討論問題: '',
-          審核狀態: '待審'
+          '適用年級': '',
+          '內容摘要': '',
+          '教學重點': '',
+          '討論問題': '',
+          '審核狀態': '待審'
         });
       } else {
         setMessage(`錯誤：${result.data.error}`);
@@ -494,8 +465,8 @@ function AddVideoView({ apiUrl, token }: AddVideoViewProps) {
         <label className="block text-gray-700 mb-2">影片標題 *</label>
         <input
           type="text"
-          value={formData.影片標題}
-          onChange={(e) => setFormData({ ...formData, 影片標題: e.target.value })}
+          value={formData['影片標題']}
+          onChange={(e) => setFormData({ ...formData, '影片標題': e.target.value })}
           className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
@@ -504,8 +475,8 @@ function AddVideoView({ apiUrl, token }: AddVideoViewProps) {
         <label className="block text-gray-700 mb-2">YouTube連結 *</label>
         <input
           type="url"
-          value={formData.YouTube連結}
-          onChange={(e) => setFormData({ ...formData, YouTube連結: e.target.value })}
+          value={formData['YouTube連結']}
+          onChange={(e) => setFormData({ ...formData, 'YouTube連結': e.target.value })}
           className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
@@ -527,8 +498,8 @@ function AddVideoView({ apiUrl, token }: AddVideoViewProps) {
           <label className="block text-gray-700 mb-2">主題分類 *</label>
           <input
             type="text"
-            value={formData.主題分類}
-            onChange={(e) => setFormData({ ...formData, 主題分類: e.target.value })}
+            value={formData['主題分類']}
+            onChange={(e) => setFormData({ ...formData, '主題分類': e.target.value })}
             className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="例如：網路霸凌"
           />
@@ -539,8 +510,8 @@ function AddVideoView({ apiUrl, token }: AddVideoViewProps) {
         <label className="block text-gray-700 mb-2">適用年級 *</label>
         <input
           type="text"
-          value={formData.適用年級}
-          onChange={(e) => setFormData({ ...formData, 適用年級: e.target.value })}
+          value={formData['適用年級']}
+          onChange={(e) => setFormData({ ...formData, '適用年級': e.target.value })}
           className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="例如：國中, 高中"
         />
@@ -549,20 +520,20 @@ function AddVideoView({ apiUrl, token }: AddVideoViewProps) {
       <div>
         <label className="block text-gray-700 mb-2">內容摘要 *</label>
         <textarea
-          value={formData.內容摘要}
-          onChange={(e) => setFormData({ ...formData, 內容摘要: e.target.value })}
+          value={formData['內容摘要']}
+          onChange={(e) => setFormData({ ...formData, '內容摘要': e.target.value })}
           className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          rows={3}
+          rows="3"
         />
       </div>
       
       <div>
         <label className="block text-gray-700 mb-2">教學重點</label>
         <textarea
-          value={formData.教學重點}
-          onChange={(e) => setFormData({ ...formData, 教學重點: e.target.value })}
+          value={formData['教學重點']}
+          onChange={(e) => setFormData({ ...formData, '教學重點': e.target.value })}
           className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          rows={2}
+          rows="2"
         />
       </div>
       
@@ -583,13 +554,9 @@ function AddVideoView({ apiUrl, token }: AddVideoViewProps) {
   );
 }
 
-interface VideoManagementProps {
-  apiUrl: string;
-  status: string;
-}
-
-function VideoManagement({ apiUrl, status }: VideoManagementProps) {
-  const [videos, setVideos] = useState<Video[]>([]);
+// 影片管理列表
+function VideoManagement({ apiUrl, token, status }) {
+  const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
@@ -604,7 +571,7 @@ function VideoManagement({ apiUrl, status }: VideoManagementProps) {
       if (result.statusCode === 200) {
         let filtered = result.data.videos;
         if (status !== 'all') {
-          filtered = filtered.filter((v: Video) => v['審核狀態'] === status);
+          filtered = filtered.filter(v => v['審核狀態'] === status);
         }
         setVideos(filtered);
       }
