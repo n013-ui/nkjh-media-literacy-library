@@ -506,11 +506,7 @@ function AddVideoView({ apiUrl, token }: AddVideoViewProps) {
             type="text"
             placeholder="請輸入數字"
             value={formData['時長(分鐘)']}
-            onChange={(e) => {
-              const newData = { ...formData };
-              newData['時長(分鐘)'] = e.target.value;
-              setFormData(newData);
-            }}
+            onChange={(e) => setFormData({ ...formData, '時長(分鐘)': e.target.value } as any)}
             className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
