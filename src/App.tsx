@@ -359,17 +359,17 @@ function VideoCard({ video }: VideoCardProps) {
         <span className="text-gray-500">{video['時長(分鐘)']} 分鐘</span>
       </div>
       <p className="text-gray-700 text-sm mb-3">{video['內容摘要']}</p>
-      <div className="flex justify-between items-center">
-        <span className="text-xs text-gray-500">{video['適用年級']}</span>
-        
-          href={video['YouTube連結']}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700"
-        >
-          觀看影片
-        </a>
-      </div>
+<div className="flex justify-between items-center">
+  <span className="text-xs text-gray-500">{video['適用年級']}</span>
+  
+    href={video['YouTube連結']}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+  >
+    觀看影片
+  </a>
+</div>
     </div>
   );
 }
