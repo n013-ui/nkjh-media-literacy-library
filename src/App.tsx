@@ -399,6 +399,13 @@ function AdminView({ apiUrl, token, user }) {
   );
 }
 
+interface AddVideoViewProps {
+  apiUrl: string;
+  token: string;
+}
+
+
+
 // 新增影片介面（不使用 form 標籤）
 function AddVideoView({ apiUrl, token }: AddVideoViewProps) {
   const [formData, setFormData] = useState<{
