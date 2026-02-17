@@ -54,7 +54,7 @@ export default function MediaLibraryApp() {
   const isCoreUser = user?.role === '核心成員';
   
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* 導覽列 */}
       <nav className="bg-blue-600 text-white shadow-lg">
         <div className="container mx-auto px-4 py-4">
@@ -103,7 +103,7 @@ export default function MediaLibraryApp() {
       </nav>
       
       {/* 主要內容 */}
-      <div className="container mx-auto px-4 py-8">
+      <div className="flex-1 container mx-auto px-4 py-8">
         {currentView === 'login' && !isLoggedIn && (
           <LoginPage onLogin={handleLogin} apiUrl={API_URL} />
         )}
@@ -114,6 +114,22 @@ export default function MediaLibraryApp() {
           <AdminView apiUrl={API_URL} token={token} user={user} isCoreUser={isCoreUser} />
         )}
       </div>
+      
+      {/* 頁尾版權宣告 */}
+      <footer className="bg-gray-800 text-white py-6 mt-auto">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="text-center md:text-left">
+              <p className="text-lg font-semibold mb-1">南崁國中媒體素養教師社群</p>
+              <p className="text-sm text-gray-300">Nankan Junior High School Media Literacy Community</p>
+            </div>
+            <div className="text-center md:text-right text-sm text-gray-400">
+              <p>© {new Date().getFullYear()} 版權所有</p>
+              <p className="mt-1">致力於推動媒體素養教育</p>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
