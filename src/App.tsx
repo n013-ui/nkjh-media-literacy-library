@@ -819,12 +819,70 @@ function EditVideoView({ video, onSave, onCancel }) {
             <label className="block text-gray-700 mb-2 font-medium">
               適用年級 <span className="text-red-500">*</span>
             </label>
-            <input
-              type="text"
-              value={formData['適用年級']}
-              onChange={(e) => setFormData({ ...formData, '適用年級': e.target.value })}
-              className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData['適用年級']?.includes('國小')}
+                  onChange={(e) => {
+                    const current = formData['適用年級'] || '';
+                    const grades = current.split(',').map(g => g.trim()).filter(g => g);
+                    if (e.target.checked) {
+                      if (!grades.includes('國小')) grades.push('國小');
+                    } else {
+                      const index = grades.indexOf('國小');
+                      if (index > -1) grades.splice(index, 1);
+                    }
+                    setFormData({ ...formData, '適用年級': grades.join(', ') });
+                  }}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-gray-700">國小</span>
+              </label>
+              
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData['適用年級']?.includes('國中')}
+                  onChange={(e) => {
+                    const current = formData['適用年級'] || '';
+                    const grades = current.split(',').map(g => g.trim()).filter(g => g);
+                    if (e.target.checked) {
+                      if (!grades.includes('國中')) grades.push('國中');
+                    } else {
+                      const index = grades.indexOf('國中');
+                      if (index > -1) grades.splice(index, 1);
+                    }
+                    setFormData({ ...formData, '適用年級': grades.join(', ') });
+                  }}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-gray-700">國中</span>
+              </label>
+              
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData['適用年級']?.includes('高中')}
+                  onChange={(e) => {
+                    const current = formData['適用年級'] || '';
+                    const grades = current.split(',').map(g => g.trim()).filter(g => g);
+                    if (e.target.checked) {
+                      if (!grades.includes('高中')) grades.push('高中');
+                    } else {
+                      const index = grades.indexOf('高中');
+                      if (index > -1) grades.splice(index, 1);
+                    }
+                    setFormData({ ...formData, '適用年級': grades.join(', ') });
+                  }}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-gray-700">高中</span>
+              </label>
+            </div>
+            {formData['適用年級'] && (
+              <p className="text-sm text-gray-500 mt-2">已選擇：{formData['適用年級']}</p>
+            )}
           </div>
         </div>
       </div>
@@ -1228,13 +1286,70 @@ function AddVideoView({ apiUrl, token, user }: AddVideoViewProps) {
             <label className="block text-gray-700 mb-2 font-medium">
               適用年級 <span className="text-red-500">*</span>
             </label>
-            <input
-              type="text"
-              value={formData['適用年級']}
-              onChange={(e) => setFormData({ ...formData, '適用年級': e.target.value })}
-              className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="例如：國中、高中"
-            />
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData['適用年級']?.includes('國小')}
+                  onChange={(e) => {
+                    const current = formData['適用年級'] || '';
+                    const grades = current.split(',').map(g => g.trim()).filter(g => g);
+                    if (e.target.checked) {
+                      if (!grades.includes('國小')) grades.push('國小');
+                    } else {
+                      const index = grades.indexOf('國小');
+                      if (index > -1) grades.splice(index, 1);
+                    }
+                    setFormData({ ...formData, '適用年級': grades.join(', ') });
+                  }}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-gray-700">國小</span>
+              </label>
+              
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData['適用年級']?.includes('國中')}
+                  onChange={(e) => {
+                    const current = formData['適用年級'] || '';
+                    const grades = current.split(',').map(g => g.trim()).filter(g => g);
+                    if (e.target.checked) {
+                      if (!grades.includes('國中')) grades.push('國中');
+                    } else {
+                      const index = grades.indexOf('國中');
+                      if (index > -1) grades.splice(index, 1);
+                    }
+                    setFormData({ ...formData, '適用年級': grades.join(', ') });
+                  }}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-gray-700">國中</span>
+              </label>
+              
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData['適用年級']?.includes('高中')}
+                  onChange={(e) => {
+                    const current = formData['適用年級'] || '';
+                    const grades = current.split(',').map(g => g.trim()).filter(g => g);
+                    if (e.target.checked) {
+                      if (!grades.includes('高中')) grades.push('高中');
+                    } else {
+                      const index = grades.indexOf('高中');
+                      if (index > -1) grades.splice(index, 1);
+                    }
+                    setFormData({ ...formData, '適用年級': grades.join(', ') });
+                  }}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-gray-700">高中</span>
+              </label>
+            </div>
+            {formData['適用年級'] && (
+              <p className="text-sm text-gray-500 mt-2">已選擇：{formData['適用年級']}</p>
+            )}
           </div>
         </div>
       </div>
