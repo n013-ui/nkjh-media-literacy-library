@@ -476,14 +476,22 @@ function VideoForm({ apiUrl, token, user, editVideo, onSaved, onCancel }:
     備註: editVideo['備註'] || ''
   } : blank);
 
-  const [grades, setGrades]   = useState<string[]>([]);
+  const [grades, setGrades]         = useState<string[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [tags, setTags]             = useState<string[]>([]);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetch(`${apiUrl}?action=getCategories`)
       .then(r => r.json())
-      .then(r => { if (r.statusCode === 200) setGrades(r.data.grades || []); })
+      .then(r => {
+        if (r.statusCode === 200) {
+          setGrades(r.data.grades || []);
+          setCategories(r.data.categories || []);
+          setTags(r.data.tags || []);
+        }
+      })
       .catch(() => {});
   }, [apiUrl]);
 
@@ -567,10 +575,72 @@ function VideoForm({ apiUrl, token, user, editVideo, onSaved, onCancel }:
             </div>
             {inp('Drive 備份連結（選填）', 'Drive備份連結', false, 'https://drive.google.com/...', 'url')}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-3">
             {inp('時長（分鐘）', '時長(分鐘)', true, '例如：8', 'number')}
-            {inp('主題分類', '主題分類', true, '例如：網路交友')}
-            {inp('次要標籤（選填）', '次要標籤', false, '例如：街頭訪問')}
+          </div>
+
+          {/* 主題分類 勾選框 */}
+          <div>
+            <label className="block text-gray-700 mb-2 font-medium text-sm">
+              主題分類<span className="text-red-500 ml-0.5">*</span>
+              {form['主題分類'] && (
+                <span className="ml-2 text-blue-600 font-normal text-xs">已選：{form['主題分類']}</span>
+              )}
+            </label>
+            <div className="flex flex-wrap gap-3 p-3 border rounded bg-white">
+              {(categories.length > 0 ? categories : ['性剝削防治', '網路霸凌', '假訊息識讀']).map((c, i) => {
+                const selected = (form['主題分類'] || '').split('、').map((s: string) => s.trim()).filter(Boolean);
+                const isChecked = selected.includes(c);
+                const toggle = () => {
+                  const next = isChecked ? selected.filter((s: string) => s !== c) : [...selected, c];
+                  setForm({ ...form, '主題分類': next.join('、') });
+                };
+                return (
+                  <label key={i} className="flex items-center gap-2 cursor-pointer select-none">
+                    <input type="checkbox" checked={isChecked} onChange={toggle}
+                      className="w-4 h-4 rounded text-blue-600 border-gray-300 focus:ring-blue-500 cursor-pointer" />
+                    <span className={`text-sm px-2 py-0.5 rounded transition ${isChecked ? 'bg-blue-100 text-blue-800 font-medium' : 'text-gray-700'}`}>
+                      {c}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+            {categories.length === 0 && (
+              <p className="text-xs text-gray-400 mt-1">※ 選項從分類設定 A 欄載入</p>
+            )}
+          </div>
+
+          {/* 次要標籤 勾選框 */}
+          <div>
+            <label className="block text-gray-700 mb-2 font-medium text-sm">
+              次要標籤（選填）
+              {form['次要標籤'] && (
+                <span className="ml-2 text-purple-600 font-normal text-xs">已選：{form['次要標籤']}</span>
+              )}
+            </label>
+            <div className="flex flex-wrap gap-3 p-3 border rounded bg-white">
+              {(tags.length > 0 ? tags : []).map((t, i) => {
+                const selected = (form['次要標籤'] || '').split('、').map((s: string) => s.trim()).filter(Boolean);
+                const isChecked = selected.includes(t);
+                const toggle = () => {
+                  const next = isChecked ? selected.filter((s: string) => s !== t) : [...selected, t];
+                  setForm({ ...form, '次要標籤': next.join('、') });
+                };
+                return (
+                  <label key={i} className="flex items-center gap-2 cursor-pointer select-none">
+                    <input type="checkbox" checked={isChecked} onChange={toggle}
+                      className="w-4 h-4 rounded text-purple-600 border-gray-300 focus:ring-purple-500 cursor-pointer" />
+                    <span className={`text-sm px-2 py-0.5 rounded transition ${isChecked ? 'bg-purple-100 text-purple-800 font-medium' : 'text-gray-700'}`}>
+                      {t}
+                    </span>
+                  </label>
+                );
+              })}
+              {tags.length === 0 && (
+                <p className="text-xs text-gray-400">※ 選項從分類設定 D 欄載入</p>
+              )}
+            </div>
           </div>
           <div>
             <label className="block text-gray-700 mb-2 font-medium text-sm">
