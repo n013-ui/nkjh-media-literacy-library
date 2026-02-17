@@ -573,17 +573,33 @@ function VideoForm({ apiUrl, token, user, editVideo, onSaved, onCancel }:
             {inp('次要標籤（選填）', '次要標籤', false, '例如：街頭訪問')}
           </div>
           <div>
-            <label className="block text-gray-700 mb-1 font-medium text-sm">
+            <label className="block text-gray-700 mb-2 font-medium text-sm">
               適用階段<span className="text-red-500 ml-0.5">*</span>
+              {form['適用階段'] && (
+                <span className="ml-2 text-blue-600 font-normal text-xs">已選：{form['適用階段']}</span>
+              )}
             </label>
-            <select value={form['適用階段']} onChange={set('適用階段')}
-              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white">
-              <option value="">請選擇適用階段</option>
-              {grades.length > 0
-                ? grades.map((g, i) => <option key={i} value={g}>{g}</option>)
-                : ['國小', '國中', '高中'].map(g => <option key={g} value={g}>{g}</option>)
-              }
-            </select>
+            <div className="flex flex-wrap gap-3 p-3 border rounded bg-white">
+              {(grades.length > 0 ? grades : ['國小', '國中', '高中']).map((g, i) => {
+                const selected = (form['適用階段'] || '').split('、').map((s: string) => s.trim()).filter(Boolean);
+                const isChecked = selected.includes(g);
+                const toggle = () => {
+                  const next = isChecked
+                    ? selected.filter((s: string) => s !== g)
+                    : [...selected, g];
+                  setForm({ ...form, '適用階段': next.join('、') });
+                };
+                return (
+                  <label key={i} className="flex items-center gap-2 cursor-pointer select-none">
+                    <input type="checkbox" checked={isChecked} onChange={toggle}
+                      className="w-4 h-4 rounded text-blue-600 border-gray-300 focus:ring-blue-500 cursor-pointer" />
+                    <span className={`text-sm px-2 py-0.5 rounded transition ${isChecked ? 'bg-blue-100 text-blue-800 font-medium' : 'text-gray-700'}`}>
+                      {g}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
             {grades.length === 0 && (
               <p className="text-xs text-gray-400 mt-1">※ 選項從分類設定 F 欄載入，目前顯示預設值</p>
             )}
