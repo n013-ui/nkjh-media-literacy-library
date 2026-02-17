@@ -183,10 +183,12 @@ function LoginPage({ onLogin, apiUrl }) {
 // ============================================
 function PublicView({ apiUrl, isLoggedIn = false }) {
   const [videos, setVideos] = useState([]);
+  const [allVideos, setAllVideos] = useState([]); // 儲存所有影片
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState('card'); // card, list, table
   
   useEffect(() => {
     loadCategories();
@@ -205,15 +207,13 @@ function PublicView({ apiUrl, isLoggedIn = false }) {
     }
   };
   
-  const loadVideos = async (category = '') => {
+  const loadVideos = async () => {
     setLoading(true);
     try {
-      let url = `${apiUrl}?action=getVideos`;
-      if (category) url += `&category=${encodeURIComponent(category)}`;
-      
-      const response = await fetch(url);
+      const response = await fetch(`${apiUrl}?action=getVideos`);
       const result = await response.json();
       if (result.statusCode === 200) {
+        setAllVideos(result.data.videos);
         setVideos(result.data.videos);
       }
     } catch (err) {
@@ -223,14 +223,25 @@ function PublicView({ apiUrl, isLoggedIn = false }) {
     }
   };
   
+  // 修改分類篩選邏輯，支援多分類（用逗號或頓號分隔）
   const handleCategoryChange = (category) => {
     setSelectedCategory(category);
-    loadVideos(category);
+    if (!category) {
+      setVideos(allVideos);
+    } else {
+      const filtered = allVideos.filter(video => {
+        const videoCategories = video['主題分類'] || '';
+        // 支援逗號、頓號、分號分隔
+        const categories = videoCategories.split(/[,、;]/).map(c => c.trim());
+        return categories.includes(category);
+      });
+      setVideos(filtered);
+    }
   };
   
   const handleSearch = async () => {
     if (!searchKeyword.trim()) {
-      loadVideos(selectedCategory);
+      handleCategoryChange(selectedCategory);
       return;
     }
     
@@ -241,7 +252,18 @@ function PublicView({ apiUrl, isLoggedIn = false }) {
       );
       const result = await response.json();
       if (result.statusCode === 200) {
-        setVideos(result.data.videos);
+        let searchResults = result.data.videos;
+        
+        // 如果有選擇分類，再進行分類篩選（支援多分類）
+        if (selectedCategory) {
+          searchResults = searchResults.filter(video => {
+            const videoCategories = video['主題分類'] || '';
+            const categories = videoCategories.split(/[,、;]/).map(c => c.trim());
+            return categories.includes(selectedCategory);
+          });
+        }
+        
+        setVideos(searchResults);
       }
     } catch (err) {
       console.error('搜尋失敗', err);
@@ -276,7 +298,8 @@ function PublicView({ apiUrl, isLoggedIn = false }) {
           </button>
         </div>
         
-        <div className="flex gap-2 flex-wrap">
+        {/* 分類篩選 */}
+        <div className="flex gap-2 flex-wrap mb-4">
           <button
             onClick={() => handleCategoryChange('')}
             className={`px-4 py-2 rounded ${
@@ -297,17 +320,87 @@ function PublicView({ apiUrl, isLoggedIn = false }) {
             </button>
           ))}
         </div>
+        
+        {/* 檢視模式切換 */}
+        <div className="flex items-center gap-2 pt-4 border-t">
+          <span className="text-sm text-gray-600 mr-2">檢視模式：</span>
+          <button
+            onClick={() => setViewMode('card')}
+            className={`px-3 py-1.5 rounded text-sm ${
+              viewMode === 'card' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
+            }`}
+          >
+            📱 卡片式
+          </button>
+          <button
+            onClick={() => setViewMode('list')}
+            className={`px-3 py-1.5 rounded text-sm ${
+              viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
+            }`}
+          >
+            📋 列表式
+          </button>
+          <button
+            onClick={() => setViewMode('table')}
+            className={`px-3 py-1.5 rounded text-sm ${
+              viewMode === 'table' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
+            }`}
+          >
+            📊 表格式
+          </button>
+          <span className="text-sm text-gray-500 ml-auto">
+            共 {videos.length} 部影片
+          </span>
+        </div>
       </div>
       
       {/* 影片列表 */}
       {loading ? (
         <div className="text-center py-12">載入中...</div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {videos.map((video, index) => (
-            <VideoCard key={index} video={video} isLoggedIn={isLoggedIn} />
-          ))}
-        </div>
+        <>
+          {/* 卡片式檢視 */}
+          {viewMode === 'card' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {videos.map((video, index) => (
+                <VideoCard key={index} video={video} isLoggedIn={isLoggedIn} />
+              ))}
+            </div>
+          )}
+          
+          {/* 列表式檢視 */}
+          {viewMode === 'list' && (
+            <div className="space-y-3">
+              {videos.map((video, index) => (
+                <VideoListItem key={index} video={video} isLoggedIn={isLoggedIn} />
+              ))}
+            </div>
+          )}
+          
+          {/* 表格式檢視 */}
+          {viewMode === 'table' && (
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">影片標題</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">分類</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">時長</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">年級</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {videos.map((video, index) => (
+                      <VideoTableRow key={index} video={video} isLoggedIn={isLoggedIn} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </>
       )}
       
       {!loading && videos.length === 0 && (
@@ -316,6 +409,102 @@ function PublicView({ apiUrl, isLoggedIn = false }) {
         </div>
       )}
     </div>
+  );
+}
+
+// 列表式檢視項目
+function VideoListItem({ video, isLoggedIn = false }) {
+  return (
+    <div className="bg-white rounded-lg shadow hover:shadow-md transition p-4">
+      <div className="flex items-start gap-4">
+        <div className="flex-1">
+          <div className="flex items-start justify-between mb-2">
+            <h3 className="font-bold text-lg">{video['影片標題']}</h3>
+            {video['審核狀態'] === '精選' && (
+              <Star className="text-yellow-500 fill-yellow-500 flex-shrink-0 ml-2" size={20} />
+            )}
+          </div>
+          <p className="text-gray-700 text-sm mb-2 line-clamp-2">{video['內容摘要']}</p>
+          <div className="flex items-center gap-3 text-sm">
+            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">
+              {video['主題分類']}
+            </span>
+            <span className="text-gray-500">{video['時長(分鐘)']} 分鐘</span>
+            <span className="text-gray-500">{video['適用年級']}</span>
+          </div>
+        </div>
+        <div className="flex gap-2 flex-shrink-0">
+          <a
+            href={video['YouTube連結']}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 whitespace-nowrap"
+          >
+            觀看影片
+          </a>
+          {isLoggedIn && video['Drive備份連結'] && (
+            <a
+              href={video['Drive備份連結']}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 whitespace-nowrap"
+            >
+              下載
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 表格式檢視行
+function VideoTableRow({ video, isLoggedIn = false }) {
+  return (
+    <tr className="hover:bg-gray-50">
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-gray-900">{video['影片標題']}</span>
+          {video['審核狀態'] === '精選' && (
+            <Star className="text-yellow-500 fill-yellow-500" size={16} />
+          )}
+        </div>
+        <p className="text-sm text-gray-600 mt-1 line-clamp-1">{video['內容摘要']}</p>
+      </td>
+      <td className="px-4 py-3">
+        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+          {video['主題分類']}
+        </span>
+      </td>
+      <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+        {video['時長(分鐘)']} 分鐘
+      </td>
+      <td className="px-4 py-3 text-sm text-gray-600">
+        {video['適用年級']}
+      </td>
+      <td className="px-4 py-3">
+        <div className="flex gap-2">
+          <a
+            href={video['YouTube連結']}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-1.5 bg-red-600 text-white rounded text-sm hover:bg-red-700 whitespace-nowrap"
+          >
+            觀看
+          </a>
+          {isLoggedIn && video['Drive備份連結'] && (
+            <a
+              href={video['Drive備份連結']}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-1.5 bg-green-600 text-white rounded text-sm hover:bg-green-700 whitespace-nowrap"
+            >
+              下載
+            </a>
+          )}
+        </div>
+      </td>
+    </tr>
   );
 }
 
