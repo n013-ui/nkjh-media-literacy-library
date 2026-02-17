@@ -180,14 +180,6 @@ function LoginForm({ onLogin, apiUrl }: { onLogin: any; apiUrl: string }) {
         {loading ? '登入中...' : '登入'}
       </button>
 
-      {/* 通用帳號提示 */}
-      <div className="p-4 bg-amber-50 border border-amber-200 rounded text-sm">
-        <p className="font-medium text-amber-800 mb-2">📥 訪客下載帳號（免申請）</p>
-        <p className="text-amber-700">帳號：<code className="bg-amber-100 px-1 rounded">media@share</code></p>
-        <p className="text-amber-700">密碼：<code className="bg-amber-100 px-1 rounded">mediadownload</code></p>
-        <p className="text-amber-600 text-xs mt-1">登入後可下載所有已審核影片的備份連結</p>
-      </div>
-
       <div className="p-3 bg-gray-50 rounded text-xs text-gray-500">
         <p>• <strong>核心成員</strong>：上傳、審核、管理所有影片</p>
         <p>• <strong>協作教師</strong>：上傳影片、下載資源（需申請）</p>
