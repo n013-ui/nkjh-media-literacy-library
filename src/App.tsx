@@ -59,11 +59,11 @@ export default function MediaLibraryApp() {
       <nav className="bg-blue-600 text-white shadow-lg">
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold">媒體素養教學影片資源庫</h1>
+            <h1 className="text-2xl font-bold text-white">媒體素養教學影片資源庫</h1>
             <div className="flex gap-4 items-center">
               <button
                 onClick={() => setCurrentView('public')}
-                className="px-4 py-2 rounded hover:bg-blue-700"
+                className="px-4 py-2 rounded hover:bg-blue-700 text-white"
               >
                 <Eye className="inline mr-2" size={18} />
                 瀏覽影片
@@ -72,17 +72,17 @@ export default function MediaLibraryApp() {
                 <>
                   <button
                     onClick={() => setCurrentView('admin')}
-                    className="px-4 py-2 rounded hover:bg-blue-700"
+                    className="px-4 py-2 rounded hover:bg-blue-700 text-white"
                   >
                     {isCoreUser ? '管理後台' : '我的影片'}
                   </button>
-                  <div className="text-sm">
-                    <div className="text-white/90">{user.name}</div>
-                    <div className="text-white/60 text-xs">{user.role}</div>
+                  <div className="text-sm text-white">
+                    <div className="text-white font-medium">{user.name}</div>
+                    <div className="text-white/80 text-xs">{user.role}</div>
                   </div>
                   <button
                     onClick={handleLogout}
-                    className="px-4 py-2 rounded bg-red-500 hover:bg-red-600"
+                    className="px-4 py-2 rounded bg-red-500 hover:bg-red-600 text-white"
                   >
                     <LogOut className="inline mr-2" size={18} />
                     登出
@@ -91,7 +91,7 @@ export default function MediaLibraryApp() {
               ) : (
                 <button
                   onClick={() => setCurrentView('login')}
-                  className="px-4 py-2 rounded bg-green-500 hover:bg-green-600"
+                  className="px-4 py-2 rounded bg-green-500 hover:bg-green-600 text-white"
                 >
                   <LogIn className="inline mr-2" size={18} />
                   成員登入
