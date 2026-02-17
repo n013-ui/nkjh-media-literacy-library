@@ -32,7 +32,13 @@ export default function MediaLibraryApp() {
     setIsLoggedIn(true);
     localStorage.setItem('token', userToken);
     localStorage.setItem('user', JSON.stringify(userData));
-    setCurrentView('admin');
+    
+    // 根據角色決定導向
+    if (userData.role === '核心成員') {
+      setCurrentView('admin');
+    } else {
+      setCurrentView('public');
+    }
   };
   
   const handleLogout = () => {
@@ -44,6 +50,9 @@ export default function MediaLibraryApp() {
     setCurrentView('public');
   };
   
+  // 判斷是否為核心成員
+  const isCoreUser = user?.role === '核心成員';
+  
   return (
     <div className="min-h-screen bg-gray-50">
       {/* 導覽列 */}
@@ -51,7 +60,7 @@ export default function MediaLibraryApp() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold">媒體素養教學影片資源庫</h1>
-            <div className="flex gap-4">
+            <div className="flex gap-4 items-center">
               <button
                 onClick={() => setCurrentView('public')}
                 className="px-4 py-2 rounded hover:bg-blue-700"
@@ -61,12 +70,18 @@ export default function MediaLibraryApp() {
               </button>
               {isLoggedIn ? (
                 <>
-                  <button
-                    onClick={() => setCurrentView('admin')}
-                    className="px-4 py-2 rounded hover:bg-blue-700"
-                  >
-                    管理後台
-                  </button>
+                  {isCoreUser && (
+                    <button
+                      onClick={() => setCurrentView('admin')}
+                      className="px-4 py-2 rounded hover:bg-blue-700"
+                    >
+                      管理後台
+                    </button>
+                  )}
+                  <div className="text-sm">
+                    <div className="text-white/80">{user.name}</div>
+                    <div className="text-white/60 text-xs">{user.role}</div>
+                  </div>
                   <button
                     onClick={handleLogout}
                     className="px-4 py-2 rounded bg-red-500 hover:bg-red-600"
@@ -81,7 +96,7 @@ export default function MediaLibraryApp() {
                   className="px-4 py-2 rounded bg-green-500 hover:bg-green-600"
                 >
                   <LogIn className="inline mr-2" size={18} />
-                  核心成員登入
+                  成員登入
                 </button>
               )}
             </div>
@@ -97,8 +112,14 @@ export default function MediaLibraryApp() {
         {currentView === 'public' && (
           <PublicView apiUrl={API_URL} isLoggedIn={isLoggedIn} />
         )}
-        {currentView === 'admin' && isLoggedIn && (
+        {currentView === 'admin' && isLoggedIn && isCoreUser && (
           <AdminView apiUrl={API_URL} token={token} user={user} />
+        )}
+        {currentView === 'admin' && isLoggedIn && !isCoreUser && (
+          <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded">
+            <p className="font-medium">⚠️ 權限不足</p>
+            <p className="text-sm">您的帳號為「{user.role}」，僅能瀏覽和下載影片，無法進入管理後台。</p>
+          </div>
         )}
       </div>
     </div>
@@ -141,7 +162,11 @@ function LoginPage({ onLogin, apiUrl }) {
   
   return (
     <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-8">
-      <h2 className="text-2xl font-bold mb-6 text-center">核心成員登入</h2>
+      <h2 className="text-2xl font-bold mb-2 text-center">成員登入</h2>
+      <p className="text-center text-gray-600 mb-6 text-sm">
+        核心成員可管理影片 · 協作教師可下載資源
+      </p>
+      
       <div className="space-y-4">
         <div>
           <label className="block text-gray-700 mb-2">Email</label>
@@ -150,6 +175,7 @@ function LoginPage({ onLogin, apiUrl }) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="your@email.com"
           />
         </div>
         <div>
@@ -158,21 +184,31 @@ function LoginPage({ onLogin, apiUrl }) {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSubmit(e)}
             className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="••••••••"
           />
         </div>
         {error && (
-          <div className="p-3 bg-red-100 text-red-700 rounded">
+          <div className="p-3 bg-red-100 text-red-700 rounded text-sm">
             {error}
           </div>
         )}
         <button
           onClick={handleSubmit}
           disabled={loading}
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
+          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:bg-gray-400 transition"
         >
           {loading ? '登入中...' : '登入'}
         </button>
+        
+        <div className="mt-4 p-4 bg-gray-50 rounded text-sm">
+          <p className="font-medium text-gray-700 mb-2">👥 成員類型說明：</p>
+          <ul className="space-y-1 text-gray-600">
+            <li>• <strong>核心成員</strong>：可上傳、審核、下載影片</li>
+            <li>• <strong>協作教師</strong>：可瀏覽、下載影片資源</li>
+          </ul>
+        </div>
       </div>
     </div>
   );
@@ -435,7 +471,7 @@ function VideoListItem({ video, isLoggedIn = false }) {
         </div>
         <div className="flex gap-2 flex-shrink-0">
           <a
-            href={video['YouTube連結']}
+            href={video['影片連結'] || video['YouTube連結']}
             target="_blank"
             rel="noopener noreferrer"
             className="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 whitespace-nowrap"
@@ -485,7 +521,7 @@ function VideoTableRow({ video, isLoggedIn = false }) {
       <td className="px-4 py-3">
         <div className="flex gap-2">
           <a
-            href={video['YouTube連結']}
+            href={video['影片連結'] || video['YouTube連結']}
             target="_blank"
             rel="noopener noreferrer"
             className="px-3 py-1.5 bg-red-600 text-white rounded text-sm hover:bg-red-700 whitespace-nowrap"
@@ -533,12 +569,12 @@ function AdminVideoCard({ video, onStatusChange, onEdit, onDelete }) {
           </div>
           <div className="flex gap-2 text-sm">
             <a
-              href={video['YouTube連結']}
+              href={video['影片連結'] || video['YouTube連結']}
               target="_blank"
               rel="noopener noreferrer"
               className="text-red-600 hover:underline"
             >
-              YouTube 連結
+              影片連結
             </a>
             {video['Drive備份連結'] && (
               <>
@@ -622,7 +658,7 @@ function VideoCard({ video, isLoggedIn = false }) {
         <span className="text-xs text-gray-500">{video['適用年級']}</span>
         <div className="flex gap-2">
           <a
-            href={video['YouTube連結']}
+            href={video['影片連結'] || video['YouTube連結']}
             target="_blank"
             rel="noopener noreferrer"
             className="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700"
@@ -702,7 +738,7 @@ interface AddVideoViewProps {
 function AddVideoView({ apiUrl, token }: AddVideoViewProps) {
   const [formData, setFormData] = useState({
     影片標題: '',
-    YouTube連結: '',
+    影片連結: '',
     'Drive備份連結': '',
     主題分類: '',
     次要標籤: '',
@@ -725,7 +761,7 @@ function AddVideoView({ apiUrl, token }: AddVideoViewProps) {
     setMessage('');
     
     // 驗證必填欄位
-    const required = ['影片標題', 'YouTube連結', '主題分類', '時長(分鐘)', '適用年級', '內容摘要', '教學重點', '討論問題'];
+    const required = ['影片標題', '影片連結', '主題分類', '時長(分鐘)', '適用年級', '內容摘要', '教學重點', '討論問題'];
     for (let field of required) {
       if (!formData[field]) {
         setMessage(`${field} 為必填欄位`);
@@ -750,7 +786,7 @@ function AddVideoView({ apiUrl, token }: AddVideoViewProps) {
         // 重置表單
         setFormData({
           '影片標題': '',
-          'YouTube連結': '',
+          '影片連結': '',
           'Drive備份連結': '',
           '主題分類': '',
           '次要標籤': '',
@@ -798,15 +834,16 @@ function AddVideoView({ apiUrl, token }: AddVideoViewProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-gray-700 mb-2 font-medium">
-                YouTube連結 <span className="text-red-500">*</span>
+                影片連結 <span className="text-red-500">*</span>
               </label>
               <input
                 type="url"
-                value={formData['YouTube連結']}
-                onChange={(e) => setFormData({ ...formData, 'YouTube連結': e.target.value })}
+                value={formData['影片連結']}
+                onChange={(e) => setFormData({ ...formData, '影片連結': e.target.value })}
                 className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="https://www.youtube.com/watch?v=..."
+                placeholder="例如：https://www.youtube.com/watch?v=..."
               />
+              <p className="text-xs text-gray-500 mt-1">支援 YouTube、Vimeo 等平台</p>
             </div>
             
             <div>
