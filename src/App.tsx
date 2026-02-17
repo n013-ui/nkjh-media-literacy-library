@@ -474,7 +474,7 @@ function VideoListItem({ video, isLoggedIn = false }) {
               {video['主題分類']}
             </span>
             <span className="text-gray-500">{video['時長(分鐘)']} 分鐘</span>
-            <span className="text-gray-500">{video['適用年級']}</span>
+            <span className="text-gray-500">{video['適用階段']}</span>
           </div>
         </div>
         <div className="flex gap-2 flex-shrink-0">
@@ -524,7 +524,7 @@ function VideoTableRow({ video, isLoggedIn = false }) {
         {video['時長(分鐘)']} 分鐘
       </td>
       <td className="px-4 py-3 text-sm text-gray-600">
-        {video['適用年級']}
+        {video['適用階段']}
       </td>
       <td className="px-4 py-3">
         <div className="flex gap-2">
@@ -578,7 +578,7 @@ function AdminVideoCard({ video, onStatusChange, onEdit, onDelete, isCoreUser, u
               {video['主題分類']}
             </span>
             <span className="text-gray-500 text-sm">{video['時長(分鐘)']} 分鐘</span>
-            <span className="text-gray-500 text-sm">{video['適用年級']}</span>
+            <span className="text-gray-500 text-sm">{video['適用階段']}</span>
             {video['推薦老師'] && (
               <span className="text-gray-500 text-sm">上傳：{video['推薦老師']}</span>
             )}
@@ -688,7 +688,7 @@ function EditVideoView({ video, onSave, onCancel }) {
     主題分類: video['主題分類'] || '',
     次要標籤: video['次要標籤'] || '',
     '時長(分鐘)': video['時長(分鐘)'] || '',
-    適用年級: video['適用年級'] || '',
+    適用階段: video['適用階段'] || '',
     內容摘要: video['內容摘要'] || '',
     教學重點: video['教學重點'] || '',
     討論問題: video['討論問題'] || '',
@@ -699,13 +699,30 @@ function EditVideoView({ video, onSave, onCancel }) {
   
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [grades, setGrades] = useState<string[]>([]);
+  
+  // 載入適用階段選項
+  useEffect(() => {
+    const loadGrades = async () => {
+      try {
+        const response = await fetch(`${API_URL}?action=getCategories`);
+        const result = await response.json();
+        if (result.statusCode === 200 && result.data.grades) {
+          setGrades(result.data.grades);
+        }
+      } catch (err) {
+        console.error('載入適用階段失敗', err);
+      }
+    };
+    loadGrades();
+  }, []);
   
   const handleSubmit = async () => {
     setLoading(true);
     setMessage('');
     
     // 驗證必填欄位
-    const required = ['影片標題', '影片連結', '主題分類', '時長(分鐘)', '適用年級', '內容摘要'];
+    const required = ['影片標題', '影片連結', '主題分類', '時長(分鐘)', '適用階段', '內容摘要'];
     for (let field of required) {
       if (!formData[field]) {
         setMessage(`${field} 為必填欄位`);
@@ -798,90 +815,38 @@ function EditVideoView({ video, onSave, onCancel }) {
                 type="text"
                 value={formData['主題分類']}
                 onChange={(e) => setFormData({ ...formData, '主題分類': e.target.value })}
-                className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-gray-700 mb-2 font-medium">
-                次要標籤
-              </label>
-              <input
-                type="text"
-                value={formData['次要標籤']}
-                onChange={(e) => setFormData({ ...formData, '次要標籤': e.target.value })}
-                className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-          
           <div>
             <label className="block text-gray-700 mb-2 font-medium">
-              適用年級 <span className="text-red-500">*</span>
+              適用階段 <span className="text-red-500">*</span>
             </label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData['適用年級']?.includes('國小')}
-                  onChange={(e) => {
-                    const current = formData['適用年級'] || '';
-                    const grades = current.split(',').map(g => g.trim()).filter(g => g);
-                    if (e.target.checked) {
-                      if (!grades.includes('國小')) grades.push('國小');
-                    } else {
-                      const index = grades.indexOf('國小');
-                      if (index > -1) grades.splice(index, 1);
-                    }
-                    setFormData({ ...formData, '適用年級': grades.join(', ') });
-                  }}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-gray-700">國小</span>
-              </label>
-              
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData['適用年級']?.includes('國中')}
-                  onChange={(e) => {
-                    const current = formData['適用年級'] || '';
-                    const grades = current.split(',').map(g => g.trim()).filter(g => g);
-                    if (e.target.checked) {
-                      if (!grades.includes('國中')) grades.push('國中');
-                    } else {
-                      const index = grades.indexOf('國中');
-                      if (index > -1) grades.splice(index, 1);
-                    }
-                    setFormData({ ...formData, '適用年級': grades.join(', ') });
-                  }}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-gray-700">國中</span>
-              </label>
-              
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData['適用年級']?.includes('高中')}
-                  onChange={(e) => {
-                    const current = formData['適用年級'] || '';
-                    const grades = current.split(',').map(g => g.trim()).filter(g => g);
+            <select
+              value={formData['適用階段']}
+              onChange={(e) => setFormData({ ...formData, '適用階段': e.target.value })}
+              className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">請選擇適用階段</option>
+              {grades.map((grade, index) => (
+                <option key={index} value={grade}>
+                  {grade}
+                </option>
+              ))}
+            </select>
+          </div>
                     if (e.target.checked) {
                       if (!grades.includes('高中')) grades.push('高中');
                     } else {
                       const index = grades.indexOf('高中');
                       if (index > -1) grades.splice(index, 1);
                     }
-                    setFormData({ ...formData, '適用年級': grades.join(', ') });
+                    setFormData({ ...formData, '適用階段': grades.join(', ') });
                   }}
                   className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
                 <span className="text-gray-700">高中</span>
               </label>
             </div>
-            {formData['適用年級'] && (
-              <p className="text-sm text-gray-500 mt-2">已選擇：{formData['適用年級']}</p>
+            {formData['適用階段'] && (
+              <p className="text-sm text-gray-500 mt-2">已選擇：{formData['適用階段']}</p>
             )}
           </div>
         </div>
@@ -1010,7 +975,7 @@ function VideoCard({ video, isLoggedIn = false }) {
       </div>
       <p className="text-gray-700 text-sm mb-3">{video['內容摘要']}</p>
       <div className="flex justify-between items-center flex-wrap gap-2">
-        <span className="text-xs text-gray-500">{video['適用年級']}</span>
+        <span className="text-xs text-gray-500">{video['適用階段']}</span>
         <div className="flex gap-2">
           <a
             href={video['影片連結'] || video['YouTube連結']}
@@ -1120,7 +1085,7 @@ function AddVideoView({ apiUrl, token, user }: AddVideoViewProps) {
     主題分類: '',
     次要標籤: '',
     '時長(分鐘)': '',
-    適用年級: '',
+    適用階段: '',
     內容摘要: '',
     教學重點: '',
     討論問題: '',
@@ -1132,13 +1097,30 @@ function AddVideoView({ apiUrl, token, user }: AddVideoViewProps) {
   
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [grades, setGrades] = useState<string[]>([]);
+  
+  // 載入適用階段選項
+  useEffect(() => {
+    const loadGrades = async () => {
+      try {
+        const response = await fetch(`${apiUrl}?action=getCategories`);
+        const result = await response.json();
+        if (result.statusCode === 200 && result.data.grades) {
+          setGrades(result.data.grades);
+        }
+      } catch (err) {
+        console.error('載入適用階段失敗', err);
+      }
+    };
+    loadGrades();
+  }, [apiUrl]);
   
   const handleSubmit = async () => {
     setLoading(true);
     setMessage('');
     
     // 驗證必填欄位
-    const required = ['影片標題', '影片連結', '主題分類', '時長(分鐘)', '適用年級', '內容摘要', '教學重點', '討論問題'];
+    const required = ['影片標題', '影片連結', '主題分類', '時長(分鐘)', '適用階段', '內容摘要', '教學重點', '討論問題'];
     for (let field of required) {
       if (!formData[field]) {
         setMessage(`${field} 為必填欄位`);
@@ -1170,7 +1152,7 @@ function AddVideoView({ apiUrl, token, user }: AddVideoViewProps) {
           '主題分類': '',
           '次要標籤': '',
           '時長(分鐘)': '',
-          '適用年級': '',
+          '適用階段': '',
           '內容摘要': '',
           '教學重點': '',
           '討論問題': '',
@@ -1284,72 +1266,20 @@ function AddVideoView({ apiUrl, token, user }: AddVideoViewProps) {
           
           <div>
             <label className="block text-gray-700 mb-2 font-medium">
-              適用年級 <span className="text-red-500">*</span>
+              適用階段 <span className="text-red-500">*</span>
             </label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData['適用年級']?.includes('國小')}
-                  onChange={(e) => {
-                    const current = formData['適用年級'] || '';
-                    const grades = current.split(',').map(g => g.trim()).filter(g => g);
-                    if (e.target.checked) {
-                      if (!grades.includes('國小')) grades.push('國小');
-                    } else {
-                      const index = grades.indexOf('國小');
-                      if (index > -1) grades.splice(index, 1);
-                    }
-                    setFormData({ ...formData, '適用年級': grades.join(', ') });
-                  }}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-gray-700">國小</span>
-              </label>
-              
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData['適用年級']?.includes('國中')}
-                  onChange={(e) => {
-                    const current = formData['適用年級'] || '';
-                    const grades = current.split(',').map(g => g.trim()).filter(g => g);
-                    if (e.target.checked) {
-                      if (!grades.includes('國中')) grades.push('國中');
-                    } else {
-                      const index = grades.indexOf('國中');
-                      if (index > -1) grades.splice(index, 1);
-                    }
-                    setFormData({ ...formData, '適用年級': grades.join(', ') });
-                  }}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-gray-700">國中</span>
-              </label>
-              
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData['適用年級']?.includes('高中')}
-                  onChange={(e) => {
-                    const current = formData['適用年級'] || '';
-                    const grades = current.split(',').map(g => g.trim()).filter(g => g);
-                    if (e.target.checked) {
-                      if (!grades.includes('高中')) grades.push('高中');
-                    } else {
-                      const index = grades.indexOf('高中');
-                      if (index > -1) grades.splice(index, 1);
-                    }
-                    setFormData({ ...formData, '適用年級': grades.join(', ') });
-                  }}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-gray-700">高中</span>
-              </label>
-            </div>
-            {formData['適用年級'] && (
-              <p className="text-sm text-gray-500 mt-2">已選擇：{formData['適用年級']}</p>
-            )}
+            <select
+              value={formData['適用階段']}
+              onChange={(e) => setFormData({ ...formData, '適用階段': e.target.value })}
+              className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">請選擇適用階段</option>
+              {grades.map((grade, index) => (
+                <option key={index} value={grade}>
+                  {grade}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
