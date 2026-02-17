@@ -70,16 +70,14 @@ export default function MediaLibraryApp() {
               </button>
               {isLoggedIn ? (
                 <>
-                  {isCoreUser && (
-                    <button
-                      onClick={() => setCurrentView('admin')}
-                      className="px-4 py-2 rounded hover:bg-blue-700"
-                    >
-                      管理後台
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setCurrentView('admin')}
+                    className="px-4 py-2 rounded hover:bg-blue-700"
+                  >
+                    {isCoreUser ? '管理後台' : '我的影片'}
+                  </button>
                   <div className="text-sm">
-                    <div className="text-white/80">{user.name}</div>
+                    <div className="text-white/90">{user.name}</div>
                     <div className="text-white/60 text-xs">{user.role}</div>
                   </div>
                   <button
@@ -112,14 +110,8 @@ export default function MediaLibraryApp() {
         {currentView === 'public' && (
           <PublicView apiUrl={API_URL} isLoggedIn={isLoggedIn} />
         )}
-        {currentView === 'admin' && isLoggedIn && isCoreUser && (
-          <AdminView apiUrl={API_URL} token={token} user={user} />
-        )}
-        {currentView === 'admin' && isLoggedIn && !isCoreUser && (
-          <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded">
-            <p className="font-medium">⚠️ 權限不足</p>
-            <p className="text-sm">您的帳號為「{user.role}」，僅能瀏覽和下載影片，無法進入管理後台。</p>
-          </div>
+        {currentView === 'admin' && isLoggedIn && (
+          <AdminView apiUrl={API_URL} token={token} user={user} isCoreUser={isCoreUser} />
         )}
       </div>
     </div>
@@ -545,7 +537,7 @@ function VideoTableRow({ video, isLoggedIn = false }) {
 }
 
 // 影片卡片 - 管理後台專用（包含審核功能）
-function AdminVideoCard({ video, onStatusChange, onEdit, onDelete }) {
+function AdminVideoCard({ video, onStatusChange, onEdit, onDelete, isCoreUser, userEmail }) {
   const [isUpdating, setIsUpdating] = useState(false);
   
   const handleStatusChange = async (newStatus) => {
@@ -554,18 +546,26 @@ function AdminVideoCard({ video, onStatusChange, onEdit, onDelete }) {
     setIsUpdating(false);
   };
   
+  // 判斷是否可以編輯（核心成員可編輯所有，協作教師只能編輯自己的）
+  const canEdit = isCoreUser || video['上傳者Email'] === userEmail || video['推薦老師'] === userEmail;
+  // 判斷是否可以刪除
+  const canDelete = isCoreUser || video['上傳者Email'] === userEmail;
+  
   return (
     <div className="border rounded-lg p-4 hover:bg-gray-50">
-      <div className="flex justify-between items-start">
+      <div className="flex justify-between items-start gap-4">
         <div className="flex-1">
           <h3 className="font-bold text-lg mb-1">{video['影片標題']}</h3>
           <p className="text-sm text-gray-600 mb-2">{video['內容摘要']}</p>
-          <div className="flex gap-2 mb-2">
+          <div className="flex gap-2 mb-2 flex-wrap">
             <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
               {video['主題分類']}
             </span>
             <span className="text-gray-500 text-sm">{video['時長(分鐘)']} 分鐘</span>
             <span className="text-gray-500 text-sm">{video['適用年級']}</span>
+            {video['推薦老師'] && (
+              <span className="text-gray-500 text-sm">上傳：{video['推薦老師']}</span>
+            )}
           </div>
           <div className="flex gap-2 text-sm">
             <a
@@ -592,8 +592,9 @@ function AdminVideoCard({ video, onStatusChange, onEdit, onDelete }) {
           </div>
         </div>
         
-        <div className="ml-4 flex flex-col gap-2">
-          <span className={`px-3 py-1 rounded text-sm text-center ${
+        <div className="flex flex-col gap-2">
+          {/* 審核狀態 */}
+          <span className={`px-3 py-1 rounded text-sm text-center whitespace-nowrap ${
             video['審核狀態'] === '精選' ? 'bg-yellow-100 text-yellow-800' :
             video['審核狀態'] === '通過' ? 'bg-green-100 text-green-800' :
             'bg-gray-100 text-gray-800'
@@ -601,37 +602,317 @@ function AdminVideoCard({ video, onStatusChange, onEdit, onDelete }) {
             {video['審核狀態']}
           </span>
           
-          {/* 審核按鈕 */}
+          {/* 審核按鈕（僅核心成員） */}
+          {isCoreUser && (
+            <div className="flex flex-col gap-1">
+              {video['審核狀態'] !== '通過' && (
+                <button
+                  onClick={() => handleStatusChange('通過')}
+                  disabled={isUpdating}
+                  className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:bg-gray-400 whitespace-nowrap"
+                >
+                  通過
+                </button>
+              )}
+              {video['審核狀態'] !== '精選' && video['審核狀態'] === '通過' && (
+                <button
+                  onClick={() => handleStatusChange('精選')}
+                  disabled={isUpdating}
+                  className="px-3 py-1 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-700 disabled:bg-gray-400 whitespace-nowrap"
+                >
+                  設為精選
+                </button>
+              )}
+              {video['審核狀態'] !== '待審' && (
+                <button
+                  onClick={() => handleStatusChange('待審')}
+                  disabled={isUpdating}
+                  className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 disabled:bg-gray-400 whitespace-nowrap"
+                >
+                  退回待審
+                </button>
+              )}
+            </div>
+          )}
+          
+          {/* 編輯和刪除按鈕 */}
           <div className="flex flex-col gap-1">
-            {video['審核狀態'] !== '通過' && (
+            {canEdit && (
               <button
-                onClick={() => handleStatusChange('通過')}
-                disabled={isUpdating}
-                className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:bg-gray-400"
+                onClick={() => onEdit(video)}
+                className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 whitespace-nowrap"
               >
-                通過
+                <Edit className="inline mr-1" size={14} />
+                編輯
               </button>
             )}
-            {video['審核狀態'] !== '精選' && video['審核狀態'] === '通過' && (
+            {canDelete && (
               <button
-                onClick={() => handleStatusChange('精選')}
-                disabled={isUpdating}
-                className="px-3 py-1 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-700 disabled:bg-gray-400"
+                onClick={() => onDelete(video)}
+                className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 whitespace-nowrap"
               >
-                設為精選
-              </button>
-            )}
-            {video['審核狀態'] !== '待審' && (
-              <button
-                onClick={() => handleStatusChange('待審')}
-                disabled={isUpdating}
-                className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 disabled:bg-gray-400"
-              >
-                退回待審
+                <Trash2 className="inline mr-1" size={14} />
+                刪除
               </button>
             )}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// 編輯影片組件
+function EditVideoView({ video, onSave, onCancel }) {
+  const [formData, setFormData] = useState({
+    id: video['編號'],
+    影片標題: video['影片標題'] || '',
+    影片連結: video['影片連結'] || video['YouTube連結'] || '',
+    'Drive備份連結': video['Drive備份連結'] || '',
+    主題分類: video['主題分類'] || '',
+    次要標籤: video['次要標籤'] || '',
+    '時長(分鐘)': video['時長(分鐘)'] || '',
+    適用年級: video['適用年級'] || '',
+    內容摘要: video['內容摘要'] || '',
+    教學重點: video['教學重點'] || '',
+    討論問題: video['討論問題'] || '',
+    推薦老師: video['推薦老師'] || '',
+    評分: video['評分'] || '',
+    備註: video['備註'] || ''
+  });
+  
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  
+  const handleSubmit = async () => {
+    setLoading(true);
+    setMessage('');
+    
+    // 驗證必填欄位
+    const required = ['影片標題', '影片連結', '主題分類', '時長(分鐘)', '適用年級', '內容摘要'];
+    for (let field of required) {
+      if (!formData[field]) {
+        setMessage(`${field} 為必填欄位`);
+        setLoading(false);
+        return;
+      }
+    }
+    
+    await onSave({
+      ...formData,
+      '時長(分鐘)': Number(formData['時長(分鐘)'])
+    });
+    
+    setLoading(false);
+  };
+  
+  return (
+    <div className="space-y-4 max-w-4xl">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-xl font-bold">編輯影片</h3>
+        <button
+          onClick={onCancel}
+          className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+        >
+          取消
+        </button>
+      </div>
+      
+      {/* 基本資訊 */}
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <h4 className="font-bold text-lg mb-4">📹 影片基本資訊</h4>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-gray-700 mb-2 font-medium">
+              影片標題 <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={formData['影片標題']}
+              onChange={(e) => setFormData({ ...formData, '影片標題': e.target.value })}
+              className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-gray-700 mb-2 font-medium">
+                影片連結 <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="url"
+                value={formData['影片連結']}
+                onChange={(e) => setFormData({ ...formData, '影片連結': e.target.value })}
+                className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-gray-700 mb-2 font-medium">
+                Drive 備份連結
+              </label>
+              <input
+                type="url"
+                value={formData['Drive備份連結']}
+                onChange={(e) => setFormData({ ...formData, 'Drive備份連結': e.target.value })}
+                className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-gray-700 mb-2 font-medium">
+                時長(分鐘) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                value={formData['時長(分鐘)']}
+                onChange={(e) => setFormData({ ...formData, '時長(分鐘)': e.target.value })}
+                className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-gray-700 mb-2 font-medium">
+                主題分類 <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData['主題分類']}
+                onChange={(e) => setFormData({ ...formData, '主題分類': e.target.value })}
+                className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-gray-700 mb-2 font-medium">
+                次要標籤
+              </label>
+              <input
+                type="text"
+                value={formData['次要標籤']}
+                onChange={(e) => setFormData({ ...formData, '次要標籤': e.target.value })}
+                className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+          
+          <div>
+            <label className="block text-gray-700 mb-2 font-medium">
+              適用年級 <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={formData['適用年級']}
+              onChange={(e) => setFormData({ ...formData, '適用年級': e.target.value })}
+              className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+      </div>
+      
+      {/* 教學內容 */}
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <h4 className="font-bold text-lg mb-4">📚 教學內容</h4>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-gray-700 mb-2 font-medium">
+              內容摘要 <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={formData['內容摘要']}
+              onChange={(e) => setFormData({ ...formData, '內容摘要': e.target.value })}
+              className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows={4}
+            />
+          </div>
+          
+          <div>
+            <label className="block text-gray-700 mb-2 font-medium">教學重點</label>
+            <textarea
+              value={formData['教學重點']}
+              onChange={(e) => setFormData({ ...formData, '教學重點': e.target.value })}
+              className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows={4}
+            />
+          </div>
+          
+          <div>
+            <label className="block text-gray-700 mb-2 font-medium">討論問題</label>
+            <textarea
+              value={formData['討論問題']}
+              onChange={(e) => setFormData({ ...formData, '討論問題': e.target.value })}
+              className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows={4}
+            />
+          </div>
+        </div>
+      </div>
+      
+      {/* 其他資訊 */}
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <h4 className="font-bold text-lg mb-4">📝 其他資訊</h4>
+        
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-gray-700 mb-2 font-medium">推薦老師</label>
+              <input
+                type="text"
+                value={formData['推薦老師']}
+                onChange={(e) => setFormData({ ...formData, '推薦老師': e.target.value })}
+                className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-gray-700 mb-2 font-medium">評分</label>
+              <input
+                type="number"
+                min="1"
+                max="5"
+                value={formData['評分']}
+                onChange={(e) => setFormData({ ...formData, '評分': e.target.value })}
+                className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+          
+          <div>
+            <label className="block text-gray-700 mb-2 font-medium">備註</label>
+            <textarea
+              value={formData['備註']}
+              onChange={(e) => setFormData({ ...formData, '備註': e.target.value })}
+              className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows={2}
+            />
+          </div>
+        </div>
+      </div>
+      
+      {message && (
+        <div className={`p-4 rounded-lg font-medium ${message.includes('✓') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+          {message}
+        </div>
+      )}
+      
+      <div className="flex gap-4">
+        <button
+          onClick={handleSubmit}
+          disabled={loading}
+          className="flex-1 bg-blue-600 text-white py-3 rounded-lg text-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 transition"
+        >
+          {loading ? '儲存中...' : '✓ 儲存修改'}
+        </button>
+        <button
+          onClick={onCancel}
+          className="px-8 py-3 bg-gray-500 text-white rounded-lg text-lg font-medium hover:bg-gray-600 transition"
+        >
+          取消
+        </button>
       </div>
     </div>
   );
@@ -684,32 +965,46 @@ function VideoCard({ video, isLoggedIn = false }) {
 // ============================================
 // 管理後台
 // ============================================
-function AdminView({ apiUrl, token, user }) {
-  const [activeTab, setActiveTab] = useState('pending');
+function AdminView({ apiUrl, token, user, isCoreUser }) {
+  const [activeTab, setActiveTab] = useState(isCoreUser ? 'pending' : 'myVideos');
   
   return (
     <div>
       <div className="bg-white rounded-lg shadow p-4 mb-6">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-bold">管理後台</h2>
+          <h2 className="text-xl font-bold">
+            {isCoreUser ? '管理後台' : '我的影片管理'}
+          </h2>
           <span className="text-gray-600">歡迎，{user.name}</span>
         </div>
       </div>
       
       <div className="bg-white rounded-lg shadow">
         <div className="border-b flex">
-          <button
-            onClick={() => setActiveTab('pending')}
-            className={`px-6 py-3 ${activeTab === 'pending' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}
-          >
-            待審核影片
-          </button>
-          <button
-            onClick={() => setActiveTab('all')}
-            className={`px-6 py-3 ${activeTab === 'all' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}
-          >
-            所有影片
-          </button>
+          {isCoreUser && (
+            <button
+              onClick={() => setActiveTab('pending')}
+              className={`px-6 py-3 ${activeTab === 'pending' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}
+            >
+              待審核影片
+            </button>
+          )}
+          {isCoreUser && (
+            <button
+              onClick={() => setActiveTab('all')}
+              className={`px-6 py-3 ${activeTab === 'all' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}
+            >
+              所有影片
+            </button>
+          )}
+          {!isCoreUser && (
+            <button
+              onClick={() => setActiveTab('myVideos')}
+              className={`px-6 py-3 ${activeTab === 'myVideos' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}
+            >
+              我上傳的影片
+            </button>
+          )}
           <button
             onClick={() => setActiveTab('add')}
             className={`px-6 py-3 ${activeTab === 'add' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}
@@ -720,9 +1015,16 @@ function AdminView({ apiUrl, token, user }) {
         </div>
         
         <div className="p-6">
-          {activeTab === 'add' && <AddVideoView apiUrl={apiUrl} token={token} />}
-          {activeTab === 'pending' && <VideoManagement apiUrl={apiUrl} token={token} status="待審" />}
-          {activeTab === 'all' && <VideoManagement apiUrl={apiUrl} token={token} status="all" />}
+          {activeTab === 'add' && <AddVideoView apiUrl={apiUrl} token={token} user={user} />}
+          {activeTab === 'pending' && isCoreUser && (
+            <VideoManagement apiUrl={apiUrl} token={token} status="待審" isCoreUser={isCoreUser} userEmail={user.email} />
+          )}
+          {activeTab === 'all' && isCoreUser && (
+            <VideoManagement apiUrl={apiUrl} token={token} status="all" isCoreUser={isCoreUser} userEmail={user.email} />
+          )}
+          {activeTab === 'myVideos' && !isCoreUser && (
+            <VideoManagement apiUrl={apiUrl} token={token} status="myVideos" isCoreUser={isCoreUser} userEmail={user.email} />
+          )}
         </div>
       </div>
     </div>
@@ -732,10 +1034,11 @@ function AdminView({ apiUrl, token, user }) {
 interface AddVideoViewProps {
   apiUrl: string;
   token: string;
+  user: any;
 }
 
 // 新增影片介面（完整版，對應所有 Google Sheets 欄位）
-function AddVideoView({ apiUrl, token }: AddVideoViewProps) {
+function AddVideoView({ apiUrl, token, user }: AddVideoViewProps) {
   const [formData, setFormData] = useState({
     影片標題: '',
     影片連結: '',
@@ -776,6 +1079,8 @@ function AddVideoView({ apiUrl, token }: AddVideoViewProps) {
         body: JSON.stringify({ 
           ...formData, 
           '時長(分鐘)': Number(formData['時長(分鐘)']),
+          '推薦老師': formData['推薦老師'] || user.name, // 預設為當前使用者
+          '上傳者Email': user.email, // 記錄上傳者
           token 
         })
       });
@@ -1038,10 +1343,11 @@ function AddVideoView({ apiUrl, token }: AddVideoViewProps) {
 }
 
 // 影片管理列表
-function VideoManagement({ apiUrl, token, status }) {
+function VideoManagement({ apiUrl, token, status, isCoreUser, userEmail }) {
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
+  const [editingVideo, setEditingVideo] = useState(null);
   
   useEffect(() => {
     loadVideos();
@@ -1054,9 +1360,15 @@ function VideoManagement({ apiUrl, token, status }) {
       const result = await response.json();
       if (result.statusCode === 200) {
         let filtered = result.data.videos;
-        if (status !== 'all') {
+        
+        if (status === 'myVideos') {
+          // 協作教師只看自己上傳的影片
+          filtered = filtered.filter(v => v['上傳者Email'] === userEmail || v['推薦老師'] === userEmail);
+        } else if (status !== 'all') {
+          // 待審核等狀態
           filtered = filtered.filter(v => v['審核狀態'] === status);
         }
+        
         setVideos(filtered);
       }
     } catch (err) {
@@ -1067,6 +1379,11 @@ function VideoManagement({ apiUrl, token, status }) {
   };
   
   const handleStatusChange = async (video, newStatus) => {
+    if (!isCoreUser) {
+      setMessage('✗ 您沒有審核權限');
+      return;
+    }
+    
     try {
       const response = await fetch(`${apiUrl}?action=updateStatus`, {
         method: 'POST',
@@ -1081,7 +1398,68 @@ function VideoManagement({ apiUrl, token, status }) {
       if (result.statusCode === 200) {
         setMessage(`✓ 已將「${video['影片標題']}」設為${newStatus}`);
         setTimeout(() => setMessage(''), 3000);
-        loadVideos(); // 重新載入
+        loadVideos();
+      } else {
+        setMessage(`✗ 更新失敗：${result.data.error}`);
+      }
+    } catch (err) {
+      setMessage('✗ 網路錯誤，請稍後再試');
+    }
+  };
+  
+  const handleEdit = (video) => {
+    setEditingVideo(video);
+  };
+  
+  const handleDelete = async (video) => {
+    if (!confirm(`確定要刪除「${video['影片標題']}」嗎？`)) {
+      return;
+    }
+    
+    // 檢查權限：核心成員可刪除所有，協作教師只能刪除自己的
+    if (!isCoreUser && video['上傳者Email'] !== userEmail) {
+      setMessage('✗ 您只能刪除自己上傳的影片');
+      return;
+    }
+    
+    try {
+      const response = await fetch(`${apiUrl}?action=deleteVideo`, {
+        method: 'POST',
+        body: JSON.stringify({
+          id: video['編號'],
+          token: token
+        })
+      });
+      
+      const result = await response.json();
+      if (result.statusCode === 200) {
+        setMessage(`✓ 已刪除「${video['影片標題']}」`);
+        setTimeout(() => setMessage(''), 3000);
+        loadVideos();
+      } else {
+        setMessage(`✗ 刪除失敗：${result.data.error}`);
+      }
+    } catch (err) {
+      setMessage('✗ 網路錯誤，請稍後再試');
+    }
+  };
+  
+  const handleSaveEdit = async (updatedVideo) => {
+    try {
+      const response = await fetch(`${apiUrl}?action=updateVideo`, {
+        method: 'POST',
+        body: JSON.stringify({
+          ...updatedVideo,
+          token: token
+        })
+      });
+      
+      const result = await response.json();
+      if (result.statusCode === 200) {
+        setMessage('✓ 影片更新成功');
+        setTimeout(() => setMessage(''), 3000);
+        setEditingVideo(null);
+        loadVideos();
       } else {
         setMessage(`✗ 更新失敗：${result.data.error}`);
       }
@@ -1094,6 +1472,17 @@ function VideoManagement({ apiUrl, token, status }) {
     return <div className="text-center py-8">載入中...</div>;
   }
   
+  // 如果正在編輯某個影片
+  if (editingVideo) {
+    return (
+      <EditVideoView
+        video={editingVideo}
+        onSave={handleSaveEdit}
+        onCancel={() => setEditingVideo(null)}
+      />
+    );
+  }
+  
   return (
     <div className="space-y-4">
       {message && (
@@ -1104,7 +1493,9 @@ function VideoManagement({ apiUrl, token, status }) {
       
       {videos.length === 0 ? (
         <div className="text-center text-gray-500 py-8">
-          目前沒有{status === 'all' ? '' : status}影片
+          {status === 'myVideos' 
+            ? '您還沒有上傳任何影片' 
+            : `目前沒有${status === 'all' ? '' : status}影片`}
         </div>
       ) : (
         videos.map((video, index) => (
@@ -1112,8 +1503,10 @@ function VideoManagement({ apiUrl, token, status }) {
             key={index}
             video={video}
             onStatusChange={handleStatusChange}
-            onEdit={() => {}}
-            onDelete={() => {}}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            isCoreUser={isCoreUser}
+            userEmail={userEmail}
           />
         ))
       )}
